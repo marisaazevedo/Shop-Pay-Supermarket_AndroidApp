@@ -11,7 +11,10 @@ import androidx.compose.ui.unit.dp
 import com.example.shop_pay_supermarket_androidapp.ui.theme.ShopPaySupermarket_AndroidAppTheme
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(
+    onLoginClick: () -> Unit = {},
+    onRegisterClick: () -> Unit = {}
+) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(
             modifier = Modifier
@@ -27,7 +30,7 @@ fun LoginScreen() {
 
             // Login Button
             Button(
-                onClick = { /* TODO: Implement Login Navigation */ },
+                onClick = onLoginClick,
                 modifier = Modifier.fillMaxWidth(0.7f),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -38,7 +41,7 @@ fun LoginScreen() {
 
             // Register Button
             Button(
-                onClick = { /* TODO: Implement Register Navigation */ },
+                onClick = onRegisterClick,
                 modifier = Modifier.fillMaxWidth(0.7f),
                 shape = RoundedCornerShape(12.dp)
             ) {
