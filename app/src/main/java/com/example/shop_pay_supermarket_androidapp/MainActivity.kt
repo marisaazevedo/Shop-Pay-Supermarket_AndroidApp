@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.shop_pay_supermarket_androidapp.ui.LoginScreen
+import com.example.shop_pay_supermarket_androidapp.ui.MainScreen
 import com.example.shop_pay_supermarket_androidapp.ui.ProductListScreen
 import com.example.shop_pay_supermarket_androidapp.ui.RegisterScreen
 import com.example.shop_pay_supermarket_androidapp.ui.Product
@@ -20,17 +21,22 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ShopPaySupermarket_AndroidAppTheme {
-                var currentScreen by remember { mutableStateOf("login") }
+                var currentScreen by remember { mutableStateOf("main") }
                 // Store selected product for details view
                 var selectedProduct by remember { mutableStateOf<Product?>(null) }
 
                 when (currentScreen) {
+                    "main" -> MainScreen(
+                        onLoginClick = { currentScreen = "login" },
+                        onRegisterClick = { currentScreen = "register" }
+                    )
                     "login" -> LoginScreen(
                         onLoginClick = {
-                            // Simple login - directly go to product list on successful login
+                            // Navigate to products on successful login
                             currentScreen = "products"
                         },
-                        onRegisterClick = { currentScreen = "register" }
+                        onRegisterClick = { currentScreen = "register" },
+                        onBackClick = { currentScreen = "main" } // New back navigation
                     )
                     "register" -> RegisterScreen(
                         onRegisterClick = { name, username, email, password, creditCard ->
@@ -38,7 +44,8 @@ class MainActivity : ComponentActivity() {
                             println("Registered user: $name, $username, $email")
                             currentScreen = "login"
                         },
-                        onBackToLoginClick = { currentScreen = "login" }
+                        onBackToLoginClick = { currentScreen = "login" },
+                        onBackClick = { currentScreen = "main" } // New back navigation
                     )
                     "products" -> ProductListScreen(
                         onBackClick = { currentScreen = "login" },

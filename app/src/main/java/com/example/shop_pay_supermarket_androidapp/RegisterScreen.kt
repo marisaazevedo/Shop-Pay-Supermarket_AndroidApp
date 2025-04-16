@@ -3,6 +3,8 @@ package com.example.shop_pay_supermarket_androidapp.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,10 +15,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.shop_pay_supermarket_androidapp.ui.theme.ShopPaySupermarket_AndroidAppTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     onRegisterClick: (name: String, username: String, email: String, password: String, creditCard: String) -> Unit = { _, _, _, _, _ -> },
-    onBackToLoginClick: () -> Unit = {}
+    onBackToLoginClick: () -> Unit = {},
+    onBackClick: () -> Unit = {} // New parameter for back to main navigation
 ) {
     var name by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -135,22 +139,30 @@ fun RegisterScreen(
                 passwordError == null && confirmPasswordError == null && creditCardError == null
     }
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Create Account") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back to Main Screen"
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Title
-            Text(
-                text = "Create Account",
-                style = MaterialTheme.typography.headlineMedium
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
+            // Form fields in a scrollable column would be ideal here for smaller screens
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Name Field
             OutlinedTextField(
@@ -259,7 +271,7 @@ fun RegisterScreen(
                 supportingText = { creditCardError?.let { Text(it) } }
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Register Button
             Button(
