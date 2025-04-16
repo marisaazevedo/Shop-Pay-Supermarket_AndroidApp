@@ -26,7 +26,11 @@ class MainActivity : ComponentActivity() {
                         onRegisterClick = { currentScreen = "register" }
                     )
                     "register" -> RegisterScreen(
-                        onRegisterClick = { /* TODO: Implement actual registration logic */ },
+                        onRegisterClick = { name, username, email, password, creditCard ->
+                            /* TODO: Implement actual registration logic */
+                            println("Registering user: $name, $username, $email")
+                            currentScreen = "login"
+                        },
                         onBackToLoginClick = { currentScreen = "login" }
                     )
                 }
