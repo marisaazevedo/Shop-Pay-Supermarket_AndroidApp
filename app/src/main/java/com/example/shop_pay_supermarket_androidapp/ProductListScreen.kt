@@ -1,0 +1,229 @@
+package com.example.shop_pay_supermarket_androidapp.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.example.shop_pay_supermarket_androidapp.ui.theme.ShopPaySupermarket_AndroidAppTheme
+
+data class Product(
+    val id: Int,
+    val name: String,
+    val price: Double,
+    val description: String,
+    val category: String,
+    val imageUrl: String? = null
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProductListScreen(
+    onBackClick: () -> Unit = {},
+    onProductClick: (Product) -> Unit = {},
+    onCartClick: () -> Unit = {}
+) {
+    // Sample product data
+    val products = remember {
+        listOf(
+            Product(1, "Fresh Apples", 3.99, "Red delicious apples, fresh from the orchard", "Fruits"),
+            Product(2, "Organic Bananas", 2.49, "Organic bananas, perfect for smoothies", "Fruits"),
+            Product(3, "Whole Milk", 4.29, "Fresh whole milk from local dairy farms", "Dairy"),
+            Product(4, "Eggs (12-pack)", 5.99, "Large free-range eggs", "Dairy"),
+            Product(5, "White Bread", 2.99, "Freshly baked white bread loaf", "Bakery"),
+            Product(6, "Chicken Breast", 9.99, "Boneless, skinless chicken breast", "Meat"),
+            Product(7, "Ground Beef", 8.49, "80% lean ground beef", "Meat"),
+            Product(8, "Atlantic Salmon", 14.99, "Fresh Atlantic salmon fillets", "Seafood"),
+            Product(9, "Spinach", 3.49, "Fresh spinach leaves", "Vegetables"),
+            Product(10, "Tomatoes", 2.99, "Roma tomatoes", "Vegetables"),
+            Product(11, "Potato Chips", 3.99, "Classic potato chips", "Snacks"),
+            Product(12, "Chocolate Chip Cookies", 4.49, "Freshly baked chocolate chip cookies", "Bakery"),
+            Product(13, "Orange Juice", 4.99, "100% pure squeezed orange juice", "Beverages"),
+            Product(14, "Coffee Beans", 11.99, "Premium arabica coffee beans", "Beverages"),
+            Product(15, "Pasta", 1.99, "Spaghetti pasta", "Dry Goods"),
+            Product(16, "Rice", 3.49, "White rice, 2 lb bag", "Dry Goods"),
+            Product(17, "Paper Towels", 8.99, "6-roll pack of paper towels", "Household"),
+            Product(18, "Dish Soap", 3.99, "Liquid dish soap", "Household"),
+            Product(19, "Toothpaste", 4.29, "Mint flavored toothpaste", "Personal Care"),
+            Product(20, "Shampoo", 5.99, "Moisturizing shampoo", "Personal Care")
+        )
+    }
+
+    var searchQuery by remember { mutableStateOf("") }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Products") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onCartClick) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = "Cart"
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            // Search bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                placeholder = { Text("Search products...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search"
+                    )
+                },
+                singleLine = true
+            )
+
+            // Products list
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(products.filter {
+                    searchQuery.isEmpty() ||
+                            it.name.contains(searchQuery, ignoreCase = true) ||
+                            it.description.contains(searchQuery, ignoreCase = true) ||
+                            it.category.contains(searchQuery, ignoreCase = true)
+                }) { product ->
+                    ProductCard(
+                        product = product,
+                        onClick = { onProductClick(product) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProductCard(
+    product: Product,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Product image placeholder
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.LightGray),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = product.name.first().toString(),
+                    style = MaterialTheme.typography.headlineMedium
+                )
+            }
+
+            // Product details
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp, end = 8.dp)
+            ) {
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = product.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "$${product.price}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    IconButton(
+                        onClick = { /* Add to cart functionality */ },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add to cart"
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ProductListScreenPreview() {
+    ShopPaySupermarket_AndroidAppTheme {
+        ProductListScreen()
+    }
+}

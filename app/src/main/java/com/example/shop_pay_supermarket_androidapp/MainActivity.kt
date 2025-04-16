@@ -9,7 +9,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.shop_pay_supermarket_androidapp.ui.LoginScreen
+import com.example.shop_pay_supermarket_androidapp.ui.ProductListScreen
 import com.example.shop_pay_supermarket_androidapp.ui.RegisterScreen
+import com.example.shop_pay_supermarket_androidapp.ui.Product
 import com.example.shop_pay_supermarket_androidapp.ui.theme.ShopPaySupermarket_AndroidAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,19 +21,36 @@ class MainActivity : ComponentActivity() {
         setContent {
             ShopPaySupermarket_AndroidAppTheme {
                 var currentScreen by remember { mutableStateOf("login") }
+                // Store selected product for details view
+                var selectedProduct by remember { mutableStateOf<Product?>(null) }
 
                 when (currentScreen) {
                     "login" -> LoginScreen(
-                        onLoginClick = { /* TODO: Implement actual login logic */ },
+                        onLoginClick = {
+                            // Simple login - directly go to product list on successful login
+                            currentScreen = "products"
+                        },
                         onRegisterClick = { currentScreen = "register" }
                     )
                     "register" -> RegisterScreen(
                         onRegisterClick = { name, username, email, password, creditCard ->
-                            /* TODO: Implement actual registration logic */
-                            println("Registering user: $name, $username, $email")
+                            // After registration, go back to login
+                            println("Registered user: $name, $username, $email")
                             currentScreen = "login"
                         },
                         onBackToLoginClick = { currentScreen = "login" }
+                    )
+                    "products" -> ProductListScreen(
+                        onBackClick = { currentScreen = "login" },
+                        onProductClick = { product ->
+                            // For future product details screen
+                            selectedProduct = product
+                            // currentScreen = "productDetails"
+                        },
+                        onCartClick = {
+                            // For future cart screen
+                            // currentScreen = "cart"
+                        }
                     )
                 }
             }
