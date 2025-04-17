@@ -1,6 +1,7 @@
 package com.example.shop_pay_supermarket_androidapp
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -8,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.shop_pay_supermarket_androidapp.features.auth.AuthRepository
 import com.example.shop_pay_supermarket_androidapp.ui.CartScreen
 import com.example.shop_pay_supermarket_androidapp.ui.CartState
 import com.example.shop_pay_supermarket_androidapp.ui.LoginScreen
@@ -28,6 +30,8 @@ class MainActivity : ComponentActivity() {
                 var selectedProduct by remember { mutableStateOf<Product?>(null) }
                 // Create a cart state that persists across screen changes
                 val cartState = remember { CartState() }
+                // Create an instance of AuthRepository
+                val authRepository = remember { AuthRepository(this@MainActivity) }
 
                 when (currentScreen) {
                     "main" -> MainScreen(
@@ -43,13 +47,13 @@ class MainActivity : ComponentActivity() {
                         onBackClick = { currentScreen = "main" } // New back navigation
                     )
                     "register" -> RegisterScreen(
-                        onRegisterClick = { name, username, email, password, creditCard ->
-                            // After registration, go back to login
-                            println("Registered user: $name, $username, $email")
+                        onRegistrationSuccess = {
+                            // Upon successful registration, navigate to login
+                            Toast.makeText(this@MainActivity, "Registration successful! Please login.", Toast.LENGTH_LONG).show()
                             currentScreen = "login"
                         },
                         onBackToLoginClick = { currentScreen = "login" },
-                        onBackClick = { currentScreen = "main" } // New back navigation
+                        onBackClick = { currentScreen = "main" }
                     )
                     "products" -> ProductListScreen(
                         onBackClick = { currentScreen = "login" },
