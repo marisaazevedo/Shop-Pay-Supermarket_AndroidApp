@@ -5,6 +5,7 @@
     "koa-logger": "^3.2.1",
     "koa-router": "^13.0.1",
     "kow": "^3.2.3",
-    "sqlite-async": "^1.2.0"
+    "sqlite-async": "^1.2.0",
+    "uuid": "^11.1.0"
   }
 }
