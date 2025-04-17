@@ -22,6 +22,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.shop_pay_supermarket_androidapp.ui.theme.ShopPaySupermarket_AndroidAppTheme
+// Import coroutines
+import kotlinx.coroutines.launch
 
 data class Product(
     val id: Int,
@@ -31,6 +33,60 @@ data class Product(
     val category: String,
     val imageUrl: String? = null
 )
+
+// Cart item that tracks quantity
+data class CartItem(
+    val product: Product,
+    val quantity: Int = 1
+)
+
+// Cart state class
+class CartState {
+    private val _items = mutableStateListOf<CartItem>()
+    val items: List<CartItem> get() = _items.toList()
+
+    // Total number of items in cart (sum of quantities)
+    val itemCount: Int get() = _items.sumOf { it.quantity }
+
+    // Total price of all items in cart
+    val totalPrice: Double get() = _items.sumOf { it.product.price * it.quantity }
+
+    // Add an item to cart or increase quantity if already in cart
+    fun addItem(product: Product) {
+        val existingItem = _items.find { it.product.id == product.id }
+        if (existingItem != null) {
+            // Replace with updated quantity
+            val index = _items.indexOf(existingItem)
+            _items[index] = existingItem.copy(quantity = existingItem.quantity + 1)
+        } else {
+            _items.add(CartItem(product))
+        }
+    }
+
+    // Remove an item from cart entirely
+    fun removeItem(productId: Int) {
+        _items.removeIf { it.product.id == productId }
+    }
+
+    // Update quantity of an item in cart
+    fun updateQuantity(productId: Int, quantity: Int) {
+        if (quantity <= 0) {
+            removeItem(productId)
+            return
+        }
+
+        val existingItem = _items.find { it.product.id == productId }
+        existingItem?.let {
+            val index = _items.indexOf(it)
+            _items[index] = it.copy(quantity = quantity)
+        }
+    }
+
+    // Clear the cart
+    fun clear() {
+        _items.clear()
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +123,15 @@ fun ProductListScreen(
 
     var searchQuery by remember { mutableStateOf("") }
 
+    // Create a cart state to manage the shopping cart
+    val cartState = remember { CartState() }
+
+    // Add a snackbar host state to show feedback when products are added
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Products") },
@@ -80,11 +144,22 @@ fun ProductListScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onCartClick) {
-                        Icon(
-                            imageVector = Icons.Default.ShoppingCart,
-                            contentDescription = "Cart"
-                        )
+                    // Modified cart button to show item count
+                    BadgedBox(
+                        badge = {
+                            if (cartState.itemCount > 0) {
+                                Badge {
+                                    Text(text = cartState.itemCount.toString())
+                                }
+                            }
+                        }
+                    ) {
+                        IconButton(onClick = onCartClick) {
+                            Icon(
+                                imageVector = Icons.Default.ShoppingCart,
+                                contentDescription = "Cart"
+                            )
+                        }
                     }
                 }
             )
@@ -126,7 +201,19 @@ fun ProductListScreen(
                 }) { product ->
                     ProductCard(
                         product = product,
-                        onClick = { onProductClick(product) }
+                        onClick = { onProductClick(product) },
+                        onAddToCart = {
+                            cartState.addItem(product)
+                            // Show snackbar feedback using coroutineScope
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = "${product.name} added to cart",
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
+                        },
+                        // Find quantity of this product in cart, if any
+                        quantityInCart = cartState.items.find { it.product.id == product.id }?.quantity ?: 0
                     )
                 }
             }
@@ -138,7 +225,9 @@ fun ProductListScreen(
 @Composable
 fun ProductCard(
     product: Product,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onAddToCart: () -> Unit,
+    quantityInCart: Int = 0
 ) {
     Card(
         onClick = onClick,
@@ -205,14 +294,28 @@ fun ProductCard(
                         color = MaterialTheme.colorScheme.primary
                     )
 
-                    IconButton(
-                        onClick = { /* Add to cart functionality */ },
-                        modifier = Modifier.size(32.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add to cart"
-                        )
+                        // Show quantity in cart if any
+                        if (quantityInCart > 0) {
+                            Text(
+                                text = "In cart: $quantityInCart",
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                        }
+
+                        // Add to cart button
+                        IconButton(
+                            onClick = onAddToCart,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add to cart"
+                            )
+                        }
                     }
                 }
             }
