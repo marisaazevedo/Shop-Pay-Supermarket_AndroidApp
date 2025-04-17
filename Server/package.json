@@ -4,6 +4,7 @@
     "koa-bodyparser": "^4.4.1",
     "koa-logger": "^3.2.1",
     "koa-router": "^13.0.1",
-    "kow": "^3.2.3"
+    "kow": "^3.2.3",
+    "sqlite-async": "^1.2.0"
   }
 }
