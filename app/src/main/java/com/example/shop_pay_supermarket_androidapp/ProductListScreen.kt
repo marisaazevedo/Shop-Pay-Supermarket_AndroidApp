@@ -93,7 +93,9 @@ class CartState {
 fun ProductListScreen(
     onBackClick: () -> Unit = {},
     onProductClick: (Product) -> Unit = {},
-    onCartClick: () -> Unit = {}
+    onCartClick: () -> Unit = {},
+    navigateToCartScreen: (CartState) -> Unit = {},
+    cartState: CartState = remember { CartState() }
 ) {
     // Sample product data
     val products = remember {
@@ -122,9 +124,6 @@ fun ProductListScreen(
     }
 
     var searchQuery by remember { mutableStateOf("") }
-
-    // Create a cart state to manage the shopping cart
-    val cartState = remember { CartState() }
 
     // Add a snackbar host state to show feedback when products are added
     val snackbarHostState = remember { SnackbarHostState() }
@@ -320,6 +319,285 @@ fun ProductCard(
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CartScreen(
+    cartState: CartState,
+    onBackClick: () -> Unit = {},
+    onCheckoutClick: () -> Unit = {}
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = { Text("My Cart") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            BottomAppBar {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Total price display
+                    Column {
+                        Text(
+                            text = "Total",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        Text(
+                            text = "$${String.format("%.2f", cartState.totalPrice)}",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    // Checkout button
+                    Button(
+                        onClick = {
+                            if (cartState.itemCount > 0) {
+                                onCheckoutClick()
+                            } else {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = "Your cart is empty",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.height(48.dp)
+                    ) {
+                        Text("Checkout (${cartState.itemCount} items)")
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        if (cartState.items.isEmpty()) {
+            // Empty cart view
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingCart,
+                    contentDescription = null,
+                    modifier = Modifier.size(96.dp),
+                    tint = Color.LightGray
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Your cart is empty",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Add items to start shopping",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Gray
+                )
+            }
+        } else {
+            // Cart items list
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(cartState.items) { cartItem ->
+                    CartItemCard(
+                        cartItem = cartItem,
+                        onIncreaseQuantity = {
+                            cartState.addItem(cartItem.product)
+                        },
+                        onDecreaseQuantity = {
+                            if (cartItem.quantity > 1) {
+                                cartState.updateQuantity(cartItem.product.id, cartItem.quantity - 1)
+                            } else {
+                                cartState.removeItem(cartItem.product.id)
+                            }
+                        },
+                        onRemoveItem = {
+                            cartState.removeItem(cartItem.product.id)
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = "${cartItem.product.name} removed from cart",
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CartItemCard(
+    cartItem: CartItem,
+    onIncreaseQuantity: () -> Unit,
+    onDecreaseQuantity: () -> Unit,
+    onRemoveItem: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Product image placeholder
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.LightGray),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = cartItem.product.name.first().toString(),
+                    style = MaterialTheme.typography.headlineMedium
+                )
+            }
+
+            // Product details
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp)
+            ) {
+                Text(
+                    text = cartItem.product.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "$${cartItem.product.price}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Item total
+                Text(
+                    text = "Total: $${String.format("%.2f", cartItem.product.price * cartItem.quantity)}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            // Quantity controls
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Remove button
+                    IconButton(
+                        onClick = onRemoveItem,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack, // Use a trash/delete icon in your actual implementation
+                            contentDescription = "Remove",
+                            tint = Color.Red
+                        )
+                    }
+
+                    // Quantity controls
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .padding(horizontal = 4.dp)
+                    ) {
+                        IconButton(
+                            onClick = onDecreaseQuantity,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Text(
+                                text = "−",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+
+                        Text(
+                            text = "${cartItem.quantity}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+
+                        IconButton(
+                            onClick = onIncreaseQuantity,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Text(
+                                text = "+",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CartScreenPreview() {
+    val cartState = CartState().apply {
+        addItem(Product(1, "Fresh Apples", 3.99, "Red delicious apples", "Fruits"))
+        addItem(Product(2, "Organic Bananas", 2.49, "Organic bananas", "Fruits"))
+        addItem(Product(1, "Fresh Apples", 3.99, "Red delicious apples", "Fruits")) // Add a second one to show quantity
+    }
+
+    ShopPaySupermarket_AndroidAppTheme {
+        CartScreen(cartState = cartState)
     }
 }
 
