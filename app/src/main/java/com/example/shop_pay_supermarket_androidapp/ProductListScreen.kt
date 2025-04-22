@@ -4,6 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -16,14 +19,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.filled.Favorite
 import com.example.shop_pay_supermarket_androidapp.ui.theme.ShopPaySupermarket_AndroidAppTheme
 // Import coroutines
 import kotlinx.coroutines.launch
+import java.util.*
+import kotlin.random.Random
 
 data class Product(
     val id: Int,
@@ -31,7 +37,8 @@ data class Product(
     val price: Double,
     val description: String,
     val category: String,
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val qrCode: String? = null // Added QR code field
 )
 
 // Cart item that tracks quantity
@@ -86,6 +93,40 @@ class CartState {
     fun clear() {
         _items.clear()
     }
+
+    // Add product from QR code
+    fun addProductFromQRCode(qrCodeData: String): Boolean {
+        try {
+            // QR code format: UUID|price_euros|price_cents|product_name
+            val parts = qrCodeData.split("|")
+            if (parts.size >= 4) {
+                val uuid = parts[0]
+                val priceEuros = parts[1].toInt()
+                val priceCents = parts[2].toInt()
+                val productName = parts[3]
+
+                val totalPrice = priceEuros + (priceCents / 100.0)
+                val productId = uuid.hashCode() // Generate an ID from the UUID
+
+                // Create a product from the QR code data
+                val product = Product(
+                    id = productId,
+                    name = productName,
+                    price = totalPrice,
+                    description = "Scanned product: $productName",
+                    category = "Scanned Products",
+                    qrCode = uuid
+                )
+
+                // Add the product to the cart
+                addItem(product)
+                return true
+            }
+            return false
+        } catch (e: Exception) {
+            return false
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,6 +138,9 @@ fun ProductListScreen(
     navigateToCartScreen: (CartState) -> Unit = {},
     cartState: CartState = remember { CartState() }
 ) {
+    // Add state for showing the QR scanner
+    var showQRScanner by remember { mutableStateOf(false) }
+
     // Sample product data
     val products = remember {
         listOf(
@@ -143,6 +187,14 @@ fun ProductListScreen(
                     }
                 },
                 actions = {
+                    // Add camera icon for QR code scanning
+                    IconButton(onClick = { showQRScanner = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = "Scan QR Code"
+                        )
+                    }
+
                     // Modified cart button to show item count
                     BadgedBox(
                         badge = {
@@ -164,63 +216,164 @@ fun ProductListScreen(
             )
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            // Search bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                placeholder = { Text("Search products...") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search"
-                    )
-                },
-                singleLine = true
-            )
+        if (showQRScanner) {
+            // Show QR code scanner placeholder
+            QRCodeScannerPlaceholder(
+                onQRCodeScanned = { mockQRData ->
+                    // Handle the scanned QR code data
+                    val success = cartState.addProductFromQRCode(mockQRData)
 
-            // Products list
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    // Show feedback via snackbar
+                    coroutineScope.launch {
+                        if (success) {
+                            snackbarHostState.showSnackbar(
+                                message = "Product added to cart from QR code",
+                                duration = SnackbarDuration.Short
+                            )
+                        } else {
+                            snackbarHostState.showSnackbar(
+                                message = "Invalid QR code format",
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                    }
+
+                    // Close the scanner
+                    showQRScanner = false
+                },
+                onClose = { showQRScanner = false }
+            )
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
             ) {
-                items(products.filter {
-                    searchQuery.isEmpty() ||
-                            it.name.contains(searchQuery, ignoreCase = true) ||
-                            it.description.contains(searchQuery, ignoreCase = true) ||
-                            it.category.contains(searchQuery, ignoreCase = true)
-                }) { product ->
-                    ProductCard(
-                        product = product,
-                        onClick = { onProductClick(product) },
-                        onAddToCart = {
-                            cartState.addItem(product)
-                            // Show snackbar feedback using coroutineScope
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message = "${product.name} added to cart",
-                                    duration = SnackbarDuration.Short
-                                )
-                            }
-                        },
-                        // Find quantity of this product in cart, if any
-                        quantityInCart = cartState.items.find { it.product.id == product.id }?.quantity ?: 0
-                    )
+                // Search bar
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    placeholder = { Text("Search products...") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search"
+                        )
+                    },
+                    singleLine = true
+                )
+
+                // Products list
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(products.filter {
+                        searchQuery.isEmpty() ||
+                                it.name.contains(searchQuery, ignoreCase = true) ||
+                                it.description.contains(searchQuery, ignoreCase = true) ||
+                                it.category.contains(searchQuery, ignoreCase = true)
+                    }) { product -> ProductCard(
+                            product = product,
+                            onClick = { onProductClick(product) },
+                            onAddToCart = {
+                                cartState.addItem(product)
+                                // Show snackbar feedback using coroutineScope
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = "${product.name} added to cart",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            },
+                            // Find quantity of this product in cart, if any
+                            quantityInCart = cartState.items.find { it.product.id == product.id }?.quantity ?: 0
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun QRCodeScannerPlaceholder(
+    onQRCodeScanned: (String) -> Unit,
+    onClose: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.9f))
+    ) {
+        // Placeholder for camera preview
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Scanner frame
+            Box(
+                modifier = Modifier
+                    .size(250.dp)
+                    .border(width = 2.dp, color = Color.White, shape = RoundedCornerShape(12.dp))
+            )
+
+            // Placeholder instructions
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "QR Code Scanner",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                Text(
+                    text = "Camera integration would go here",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 32.dp)
+                )
+
+                // Simulate scan button (since we can't actually scan)
+                Button(
+                    onClick = {
+                        // Simulate a scan with mock data
+                        onQRCodeScanned(generateMockQRData())
+                    },
+                    modifier = Modifier.padding(top = 16.dp)
+                ) {
+                    Text("Simulate QR Code Scan")
+                }
+            }
+        }
+
+        // Close button
+        IconButton(
+            onClick = onClose,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+                .size(48.dp)
+                .background(Color.White.copy(alpha = 0.2f), shape = androidx.compose.foundation.shape.CircleShape)
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Close Scanner",
+                tint = Color.White
+            )
+        }
+    }
+}
+
 @Composable
 fun ProductCard(
     product: Product,
@@ -229,92 +382,73 @@ fun ProductCard(
     quantityInCart: Int = 0
 ) {
     Card(
-        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp),
-        shape = RoundedCornerShape(12.dp),
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            // Product image placeholder
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.LightGray),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = product.name.first().toString(),
-                    style = MaterialTheme.typography.headlineMedium
-                )
-            }
-
-            // Product details
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 16.dp, end = 8.dp)
-            ) {
-                Text(
-                    text = product.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = product.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "$${product.price}",
+                        text = product.name,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "$${String.format("%.2f", product.price)}",
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Show quantity in cart if any
-                        if (quantityInCart > 0) {
-                            Text(
-                                text = "In cart: $quantityInCart",
-                                style = MaterialTheme.typography.labelMedium,
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
-                        }
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                        // Add to cart button
-                        IconButton(
-                            onClick = onAddToCart,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add to cart"
-                            )
-                        }
+                    Text(
+                        text = product.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = product.category,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Button(
+                        onClick = onAddToCart,
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add to Cart"
+                        )
+                    }
+
+                    if (quantityInCart > 0) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "In cart: $quantityInCart",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -587,24 +721,18 @@ fun CartItemCard(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun CartScreenPreview() {
-    val cartState = CartState().apply {
-        addItem(Product(1, "Fresh Apples", 3.99, "Red delicious apples", "Fruits"))
-        addItem(Product(2, "Organic Bananas", 2.49, "Organic bananas", "Fruits"))
-        addItem(Product(1, "Fresh Apples", 3.99, "Red delicious apples", "Fruits")) // Add a second one to show quantity
-    }
 
-    ShopPaySupermarket_AndroidAppTheme {
-        CartScreen(cartState = cartState)
-    }
-}
+// Helper function to generate mock QR code data for testing
+private fun generateMockQRData(): String {
+    val uuid = UUID.randomUUID().toString()
+    val priceEuros = Random.nextInt(1, 20)
+    val priceCents = Random.nextInt(0, 99)
+    val products = listOf(
+        "Organic Apple", "Premium Banana", "Fresh Orange",
+        "Specialty Coffee", "Artisan Bread", "Imported Cheese",
+        "Grass-fed Beef", "Free-range Chicken", "Wild Salmon"
+    )
+    val productName = products.random()
 
-@Preview(showBackground = true)
-@Composable
-fun ProductListScreenPreview() {
-    ShopPaySupermarket_AndroidAppTheme {
-        ProductListScreen()
-    }
+    return "$uuid|$priceEuros|$priceCents|$productName"
 }
