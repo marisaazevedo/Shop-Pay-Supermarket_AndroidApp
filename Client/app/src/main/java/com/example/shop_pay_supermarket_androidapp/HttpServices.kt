@@ -132,13 +132,13 @@ fun addUser(act: MainActivity, baseAddress: String, port: Int, userName: String)
     urlConnection?.disconnect()
   }
 }
-/*
+
 //**************************************************************************
 // Function to call REST operation DeleteUser
 fun delUser(act: MainActivity, baseAddress: String, port: Int, userId: String) {
   val urlRoute = "/users"
   val url = URL("http://$baseAddress:$port$urlRoute/$userId")
-  act.writeText("DELETE ${url.toExternalForm()}")
+  //act.writeText("DELETE ${url.toExternalForm()}")
 
   var urlConnection: HttpURLConnection? = null
   try {
@@ -148,14 +148,20 @@ fun delUser(act: MainActivity, baseAddress: String, port: Int, userId: String) {
       useCaches = false
       connectTimeout = 5000
 
+      println("Response Code: $responseCode")
       // get response
-      act.appendText("Code: $responseCode")
+      val result = "Code: $responseCode"
     }
+
+    act.runOnUiThread {
+      //onResponse(result)
+    }
+  } catch (e: Exception) {
+    println("Error: ${e.message}")
+    //onResponse("Exception: ${e.message}")
+  } finally {
+    urlConnection?.disconnect()
   }
-  catch (e: Exception) {
-    act.appendText(e.toString())
-  }
-  urlConnection?.disconnect()
 }
 
 //**************************************************************************
@@ -164,8 +170,6 @@ fun chUser(act: MainActivity, baseAddress: String, port: Int, userId: String, us
   val urlRoute = "/users"
   val url = URL("http://$baseAddress:$port$urlRoute/$userId")
   val payload = "\"" + userName + "\""
-  act.writeText("PUT ${url.toExternalForm()}")
-  act.appendText("Payload: $payload")
 
   var urlConnection: HttpURLConnection? = null
   try {
@@ -183,15 +187,22 @@ fun chUser(act: MainActivity, baseAddress: String, port: Int, userId: String, us
         close()
       }
 
+      println("Response Code: $responseCode")
       // get response
-      if (responseCode == 200)
-        act.appendText(readStream(inputStream))
-      else
-        act.appendText("Code: $responseCode")
+      val result = if (responseCode == 200) {
+        readStream(inputStream)
+      } else {
+        "Code: $responseCode"
+      }
+
+      act.runOnUiThread {
+        //onResponse(result)
+      }
     }
   } catch (e: Exception) {
-    act.appendText(e.toString())
+    println("Error: ${e.message}")
+    //onResponse("Exception: ${e.message}")
+  } finally {
+    urlConnection?.disconnect()
   }
-  urlConnection?.disconnect()
 }
-*/
