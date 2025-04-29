@@ -28,6 +28,8 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var creditCardNumber by remember { mutableStateOf("") }
+    // State for the response text to show in the UI
+    var responseText by remember { mutableStateOf("") }
 
     // Error states
     var nameError by remember { mutableStateOf<String?>(null) }

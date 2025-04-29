@@ -71,15 +71,13 @@ fun getUser(act: MainActivity, baseAddress: String, port: Int, userId: String) {
   }
   urlConnection?.disconnect()
 }
-
+*/*/*/
 //**************************************************************************
 // Function to call REST operation AddUser
 fun addUser(act: MainActivity, baseAddress: String, port: Int, userName: String) {
   val urlRoute = "/users"
   val url = URL("http://$baseAddress:$port$urlRoute")
-  act.writeText("POST ${url.toExternalForm()}")
   val payload = "\"$userName\""
-  act.appendText("payload: $payload")
 
   var urlConnection: HttpURLConnection? = null
   try {
@@ -95,19 +93,23 @@ fun addUser(act: MainActivity, baseAddress: String, port: Int, userName: String)
         flush()
         close()
       }
-      // get response
-      if (responseCode == 200)
-        act.appendText(readStream(inputStream))
-      else
-        act.appendText("Code: $responseCode")
-    }
-  }
-  catch (e: Exception) {
-    act.appendText(e.toString())
-  }
-  urlConnection?.disconnect()
-}
 
+      println("Response Code: $responseCode")
+      /*// get response
+      if (responseCode == 200) {
+        //onResponse("User $userName successfully registered.")
+      } else {
+        //onResponse("Error: Code $responseCode")
+      }*/
+    }
+  } catch (e: Exception) {
+    println("Error: ${e.message}")
+    //onResponse("Exception: ${e.message}")
+  } finally {
+    urlConnection?.disconnect()
+  }
+}
+/*
 //**************************************************************************
 // Function to call REST operation DeleteUser
 fun delUser(act: MainActivity, baseAddress: String, port: Int, userId: String) {

@@ -1,9 +1,13 @@
 package com.example.shop_pay_supermarket_androidapp
 
 import android.os.Bundle
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.widget.Toolbar
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -23,6 +27,7 @@ import com.example.shop_pay_supermarket_androidapp.ui.Product
 import com.example.shop_pay_supermarket_androidapp.ui.ProductListScreen
 import com.example.shop_pay_supermarket_androidapp.ui.RegisterScreen
 import com.example.shop_pay_supermarket_androidapp.ui.theme.ShopPaySupermarket_AndroidAppTheme
+import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +57,9 @@ class MainActivity : ComponentActivity() {
                     "register" -> RegisterScreen(
                         onRegisterClick = { name, username, email, password, creditCard ->
                             // After registration, go back to login
+                            thread {
+                                addUser(this, baseAddress = "10.0.2.2", port = 8000, userName = username)
+                            }
                             println("Registered user: $name, $username, $email")
                             currentScreen = "login"
                         },
@@ -79,16 +87,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-/*
-    fun appendText(value: String) {
-        runOnUiThread {
-            val newValue = tvResponse.text.toString() + "\n" + value
-            tvResponse.text = newValue
-        }
-    }
-
-    fun writeText(value: String) {
-        runOnUiThread { tvResponse.text = value }
-    }
- */
 }
