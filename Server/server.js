@@ -12,4 +12,4 @@ app.use(logger());
 app.use(bodyParser({strict: false}));
 app.use(router.routes());
 app.use(router.allowedMethods());
-app.listen(PORT, () => console.log('Users server running on port %d', PORT));
+app.listen(PORT, '0.0.0.0', () => console.log('Users server running on port %d', PORT));

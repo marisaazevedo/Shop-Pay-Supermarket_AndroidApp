@@ -30,6 +30,10 @@ import com.example.shop_pay_supermarket_androidapp.ui.theme.ShopPaySupermarket_A
 import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
+
+    private val baseAddress = "10.0.2.2"
+    private val port = 8000
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -58,7 +62,7 @@ class MainActivity : ComponentActivity() {
                         onRegisterClick = { name, username, email, password, creditCard ->
                             // After registration, go back to login
                             thread {
-                                addUser(this, baseAddress = "10.0.2.2", port = 8000, userName = username)
+                                addUser(this, baseAddress, port, userName = username)
                             }
                             println("Registered user: $name, $username, $email")
                             currentScreen = "login"
