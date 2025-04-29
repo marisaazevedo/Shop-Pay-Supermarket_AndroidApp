@@ -20,30 +20,42 @@ private fun readStream(input: InputStream): String {
   reader?.close()
   return response.toString()
 }
-/*
+
 //**************************************************************************
 // Function to call REST operation GetUsers
 fun getUsers(act: MainActivity, baseAddress: String, port: Int) {
   val urlRoute = "/users"
   val url = URL("http://$baseAddress:$port$urlRoute")
-  act.writeText("GET ${url.toExternalForm()}")
 
   var urlConnection: HttpURLConnection? = null
   try {
     urlConnection = (url.openConnection() as HttpURLConnection).apply {
       doInput = true
+      requestMethod = "GET"
       setRequestProperty("Content-Type", "application/json")
       useCaches = false
       connectTimeout = 5000
-      if (responseCode == 200)
-        act.appendText(readStream(inputStream))
-      else
-        act.appendText("Code: $responseCode")
+
+      println("Response Code: $responseCode")
+      // get response
+      val result = if (responseCode == 200) {
+        readStream(inputStream)
+        //onResponse("User $userName successfully registered.")
+      } else {
+        "Code: $responseCode"
+        //onResponse("Error: Code $responseCode")
+      }
+
+      act.runOnUiThread {
+        //onResponse(result)
+      }
     }
   } catch (e: Exception) {
-    act.appendText(e.toString())
+    println("Error: ${e.message}")
+    //onResponse("Exception: ${e.message}")
+  } finally {
+    urlConnection?.disconnect()
   }
-  urlConnection?.disconnect()
 }
 
 //**************************************************************************
@@ -51,27 +63,38 @@ fun getUsers(act: MainActivity, baseAddress: String, port: Int) {
 fun getUser(act: MainActivity, baseAddress: String, port: Int, userId: String) {
   val urlRoute = "/users"
   val url = URL("http://$baseAddress:$port$urlRoute/$userId")
-  act.writeText("GET ${url.toExternalForm()}")
 
   var urlConnection: HttpURLConnection? = null
   try {
     urlConnection = (url.openConnection() as HttpURLConnection).apply {
       doInput = true
+      requestMethod = "GET"
       setRequestProperty("Content-Type", "application/json")
       useCaches = false
       connectTimeout = 5000
-      if (responseCode == 200)
-        act.appendText(readStream(inputStream))
-      else
-        act.appendText("Code: $responseCode")
+
+      println("Response Code: $responseCode")
+      // get response
+      val result = if (responseCode == 200) {
+        readStream(inputStream)
+        //onResponse("User $userName successfully registered.")
+      } else {
+        "Code: $responseCode"
+        //onResponse("Error: Code $responseCode")
+      }
+
+      act.runOnUiThread {
+        //onResponse(result)
+      }
     }
+  } catch (e: Exception) {
+    println("Error: ${e.message}")
+    //onResponse("Exception: ${e.message}")
+  } finally {
+    urlConnection?.disconnect()
   }
-  catch (e: Exception) {
-    act.appendText(e.toString())
-  }
-  urlConnection?.disconnect()
 }
-*/*/*/
+
 //**************************************************************************
 // Function to call REST operation AddUser
 fun addUser(act: MainActivity, baseAddress: String, port: Int, userName: String) {
