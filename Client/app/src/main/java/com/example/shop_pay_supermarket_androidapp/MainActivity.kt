@@ -79,4 +79,16 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+/*
+    fun appendText(value: String) {
+        runOnUiThread {
+            val newValue = tvResponse.text.toString() + "\n" + value
+            tvResponse.text = newValue
+        }
+    }
+
+    fun writeText(value: String) {
+        runOnUiThread { tvResponse.text = value }
+    }
+ */
 }
